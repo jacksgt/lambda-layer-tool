@@ -6,6 +6,7 @@ import random
 import shutil
 import subprocess
 import sys
+import tempfile
 import venv
 import yaml
 
@@ -38,7 +39,7 @@ def main():
             print(e)
             sys.exit(1)
 
-        if data['version'].strip() != '0.2':
+        if data['version'].strip() != '0.3':
             print("Unsupport file version: ", data['version'])
             sys.exit(1)
 
@@ -59,13 +60,13 @@ def main():
 
 def publish_layer(layername, options):
     description = options['description']
-    runtimes = options['runtimes']
+    runtime = options['runtimes']
 
     aws_publish_layer_cmd = ['aws', 'lambda', 'publish-layer-version',
                              '--layer-name', layername,
                              '--description', description,
                              '--zip-file', 'fileb://' + layername + '.zip',
-                             '--compatible-runtimes'] + runtimes
+                             '--compatible-runtimes', runtime]
 
     try:
         proc = subprocess.run(aws_publish_layer_cmd)
@@ -80,24 +81,24 @@ def publish_layer(layername, options):
 def build_layer(layername, options):
     requirements = options['requirements']
     excludes = options['excludes']
-    runtime = options['runtimes'][0]
+    runtime = options['runtimes']
 
     if not check_runtime(runtime):
         return 1
 
-    # TODO: Use tempfile and os.path.join
-    # generate random id
-    rid = "".join([random.choice("0123456789") for x in range(10)])
+    # create temporary directory
+    tmp_dir = tempfile.TemporaryDirectory()
+    tmp_dir_path = tmp_dir.name
+    print('created temporary directory', tmp_dir_path)
 
-    # set paths
-    tmp_dir = "/tmp/layer-tool/{}/".format(rid)
-    venv_dir = tmp_dir + "venv/"
-    pip_bin = venv_dir + "bin/pip"
-    lambda_dir = tmp_dir + "python/"
+    # set_paths
+    venv_dir = os.path.join(tmp_dir_path, "venv/")
+    pip_bin = os.path.join(venv_dir, "bin/pip")
+    lambda_dir = os.path.join(tmp_dir_path, "python/")
     outfile = layername + ".zip"
 
     # activate virtualenv
-    venv.create(tmp_dir + "venv", with_pip=True)
+    venv.create(venv_dir, with_pip=True)
 
     # install requirements with pip in venv
     for r in requirements:
@@ -112,9 +113,9 @@ def build_layer(layername, options):
     # which only contains files relevant to the lambda layer
     # and change to it
     os.mkdir(lambda_dir)
-    os.rename(venv_dir + "lib/", lambda_dir + "lib/")
+    os.rename(os.path.join(venv_dir, "lib/"), os.path.join(lambda_dir, "lib/"))
     work_dir = os.getcwd()
-    os.chdir(tmp_dir)
+    os.chdir(tmp_dir_path)
 
     # put current configuration into the folder
     with open('python/layer.yaml', 'w') as outstream:
@@ -130,7 +131,7 @@ def build_layer(layername, options):
         return 1
 
     # package to zip archive and exclude unnecessary files
-    zip_cmd = ['zip', '-r', '-9', work_dir + "/" + outfile, "python/"]
+    zip_cmd = ['zip', '-r', '-9', os.path.join(work_dir, outfile), "python/"]
     for e in excludes:
         zip_cmd.append('-x')
         zip_cmd.append(e)
@@ -145,11 +146,11 @@ def build_layer(layername, options):
     os.chdir(work_dir)
 
     # delete temp directory
-    shutil.rmtree(tmp_dir)
+    tmp_dir.cleanup()
 
     # notify user
     statinfo = os.stat(outfile)
-    print("Successfully created {}, size {} B".format(outfile, statinfo.st_size))
+    print("Successfully created {}, size {} kB".format(outfile, statinfo.st_size/1000))
     return 0
 
 

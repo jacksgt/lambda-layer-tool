@@ -9,12 +9,11 @@ Then, you can use the tool to publish the new layer (version) on AWS.
 Here is a simple example:
 ```yaml
 ---
-version: '0.2'
+version: '0.3'
 layers:
   awesome-numpy:
     description: 'Minimal numpy 1.18'
-    runtimes:
-      - 'python3.6'
+    runtimes: 'python3.6'
     requirements:
       - 'numpy==1.18.2'
     excludes:
@@ -72,6 +71,7 @@ Publishing assumes you have previously configured the aws-cli to connect to your
 In addition to the Python dependencies (`requirements.txt`), this tool currently needs the following command line tools:
 
 * aws-cli (aws)
+* find
 * zip
 
 ## License
