@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import yaml
-import subprocess
-import venv
-import os
-import sys
-import shutil
-import random
 import argparse
+import os
+import random
+import shutil
+import subprocess
+import sys
+import venv
+import yaml
 
 
 def main():
@@ -46,12 +46,12 @@ def main():
             if args.list:
                 print(key)
 
-            if args.build != None and (args.build == [] or key in args.build):
+            if args.build is not None and (args.build == [] or key in args.build):
                 if build_layer(key, value):
                     print("Failed to build layer ", key, ", aborting.")
                     sys.exit(1)
 
-            if args.publish != None and (args.publish == [] or key in args.publish):
+            if args.publish is not None and (args.publish == [] or key in args.publish):
                 if publish_layer(key, value):
                     print("Failed to publish layer ", key, ", aborting.")
                     sys.exit(1)
@@ -65,7 +65,7 @@ def publish_layer(layername, options):
                              '--layer-name', layername,
                              '--description', description,
                              '--zip-file', 'fileb://' + layername + '.zip',
-                             '--compatible-runtimes' ] + runtimes
+                             '--compatible-runtimes'] + runtimes
 
     try:
         proc = subprocess.run(aws_publish_layer_cmd)
@@ -73,6 +73,8 @@ def publish_layer(layername, options):
     except subprocess.CalledProcessError as e:
         print(e)
         return 1
+
+    return 0
 
 
 def build_layer(layername, options):
