@@ -76,6 +76,11 @@ In addition to the Python dependencies (`requirements.txt`), this tool currently
 * find
 * zip
 
+## Limitations
+
+Currently, this tool only supports building Python layers with Pip.
+However, it should be fairly straightforward to extend the functionality to other runtimes, e.g. JavaScript.
+
 ## License
 
 This software is license under the [MIT License](https://spdx.org/licenses/MIT.html).
