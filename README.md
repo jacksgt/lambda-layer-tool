@@ -1,5 +1,7 @@
 # Lambda Layer Tool
 
+![Build status](https://github.com/jacksgt/lambda-layer-tool/workflows/Python%20application/badge.svg?branch=master)
+
 A tool to programmatically build and publish Layers for AWS Lambda.
 
 Instead of manually copy & pasting build instructions for a Lambda Layer into your shell or trying to script your way around, use this tool to automate the process.

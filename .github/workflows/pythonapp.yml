@@ -26,3 +26,8 @@ jobs:
 #      run: |
 #        pip install pytest
 #        pytest
+    - name: Build example layer
+      run: |
+        cd tests/numpy/
+        ../../layer-tool.py --build awesome-numpy
+        du -h awesome-numpy.zip

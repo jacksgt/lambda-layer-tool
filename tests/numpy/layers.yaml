@@ -1,0 +1,14 @@
+---
+version: '0.3'
+layers:
+  awesome-numpy:
+    description: 'Minimal numpy 1.18 for python3.7'
+    runtimes: 'python3.7'
+    requirements:
+      - 'numpy==1.18.2'
+    excludes:
+      - '*/numpy/tests/*'
+      - '*.dist-info/*'
+      - '*.egg-info/*'
+      - '*/__pycache__/*'
+      - '*.pyc'
