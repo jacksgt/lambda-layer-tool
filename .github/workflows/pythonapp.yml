@@ -20,12 +20,16 @@ jobs:
         pip install -r requirements.txt
     - name: Lint with pylint
       run: |
-        pip install pylint
-        pylint -E *.py
+        pip install -r dev-requirements.txt
+        python3 -m pylint -E *.py
 #    - name: Test with pytest
 #      run: |
 #        pip install pytest
 #        pytest
+    - name: Type checking with mypy
+      run: |
+        pip install -r dev-requirements.txt
+        python3 -m mypy *.py
     - name: Build example layer
       run: |
         cd tests/numpy/

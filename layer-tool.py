@@ -7,7 +7,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import venv
+from typing import List
+import venv # type: ignore
 import yaml
 
 
@@ -34,7 +35,7 @@ def main():
 
     with open('layers.yaml', 'r') as stream:
         try:
-            data = yaml.safe_load(stream)
+            data: dict = yaml.safe_load(stream)
         except yaml.YAMLError as e:
             print(e)
             sys.exit(1)
@@ -58,18 +59,18 @@ def main():
                     sys.exit(1)
 
 
-def publish_layer(layername, options):
-    description = options['description']
-    runtime = options['runtimes']
+def publish_layer(layername: str, options: dict) -> int:
+    description: str = options['description']
+    runtime: str = options['runtimes']
 
-    aws_publish_layer_cmd = ['aws', 'lambda', 'publish-layer-version',
-                             '--layer-name', layername,
-                             '--description', description,
-                             '--zip-file', 'fileb://' + layername + '.zip',
-                             '--compatible-runtimes', runtime]
+    aws_publish_layer_cmd: List[str] = ['aws', 'lambda', 'publish-layer-version',
+                                        '--layer-name', layername,
+                                        '--description', description,
+                                        '--zip-file', 'fileb://' + layername + '.zip',
+                                        '--compatible-runtimes', runtime]
 
     try:
-        proc = subprocess.run(aws_publish_layer_cmd)
+        proc: subprocess.CompletedProcess = subprocess.run(aws_publish_layer_cmd)
         proc.check_returncode()
     except subprocess.CalledProcessError as e:
         print(e)
@@ -78,24 +79,24 @@ def publish_layer(layername, options):
     return 0
 
 
-def build_layer(layername, options):
-    requirements = options['requirements']
-    excludes = options['excludes']
-    runtime = options['runtimes']
+def build_layer(layername: str, options: dict) -> int:
+    requirements: List[str] = options['requirements']
+    excludes: List[str] = options['excludes']
+    runtime: str = options['runtimes']
 
     if not check_runtime(runtime):
         return 1
 
     # create temporary directory
     tmp_dir = tempfile.TemporaryDirectory()
-    tmp_dir_path = tmp_dir.name
+    tmp_dir_path: str = tmp_dir.name
     print('created temporary directory', tmp_dir_path)
 
     # set_paths
-    venv_dir = os.path.join(tmp_dir_path, "venv/")
-    pip_bin = os.path.join(venv_dir, "bin/pip")
-    lambda_dir = os.path.join(tmp_dir_path, "python/")
-    outfile = layername + ".zip"
+    venv_dir: str = os.path.join(tmp_dir_path, "venv/")
+    pip_bin: str = os.path.join(venv_dir, "bin/pip")
+    lambda_dir: str = os.path.join(tmp_dir_path, "python/")
+    outfile: str = layername + ".zip"
 
     # activate virtualenv
     venv.create(venv_dir, with_pip=True)
@@ -103,7 +104,7 @@ def build_layer(layername, options):
     # install requirements with pip in venv
     for r in requirements:
         try:
-            proc = subprocess.run([pip_bin, "install", r])
+            proc: subprocess.CompletedProcess = subprocess.run([pip_bin, "install", r])
             proc.check_returncode()
         except subprocess.CalledProcessError as e:
             print(e)
@@ -114,7 +115,7 @@ def build_layer(layername, options):
     # and change to it
     os.mkdir(lambda_dir)
     os.rename(os.path.join(venv_dir, "lib/"), os.path.join(lambda_dir, "lib/"))
-    work_dir = os.getcwd()
+    work_dir: str = os.getcwd()
     os.chdir(tmp_dir_path)
 
     # put current configuration into the folder
@@ -131,10 +132,10 @@ def build_layer(layername, options):
         return 1
 
     # package to zip archive and exclude unnecessary files
-    zip_cmd = ['zip', '-r', '-9', os.path.join(work_dir, outfile), "python/"]
-    for e in excludes:
+    zip_cmd: List[str] = ['zip', '-r', '-9', os.path.join(work_dir, outfile), "python/"]
+    for exclude in excludes:
         zip_cmd.append('-x')
-        zip_cmd.append(e)
+        zip_cmd.append(exclude)
 
     try:
         proc = subprocess.run(zip_cmd)
@@ -149,13 +150,13 @@ def build_layer(layername, options):
     tmp_dir.cleanup()
 
     # notify user
-    statinfo = os.stat(outfile)
+    statinfo: os.stat_result = os.stat(outfile)
     print("Successfully created {}, size {} kB".format(outfile, statinfo.st_size/1000))
     return 0
 
 
-def check_runtime(expected_runtime):
-    actual_runtime = "python{}.{}".format(sys.version_info[0], sys.version_info[1])
+def check_runtime(expected_runtime: str) -> bool:
+    actual_runtime: str = "python{}.{}".format(sys.version_info[0], sys.version_info[1])
     if actual_runtime != expected_runtime:
         print("Error: specified runtime {} does not match: {}".format(expected_runtime, actual_runtime))
         return False
