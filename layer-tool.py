@@ -2,8 +2,6 @@
 
 import argparse
 import os
-import random
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -73,6 +71,8 @@ def main():
                     print("Failed to publish layer ", key, ", aborting.")
                     return 1
 
+    return 0
+
 
 def publish_layer(layername: str, options: dict) -> int:
     description: str = options.get('description', ' ')
@@ -85,8 +85,7 @@ def publish_layer(layername: str, options: dict) -> int:
                                         '--compatible-runtimes', runtime]
 
     try:
-        proc: subprocess.CompletedProcess = subprocess.run(aws_publish_layer_cmd)
-        proc.check_returncode()
+        subprocess.run(aws_publish_layer_cmd, check=True)
     except subprocess.CalledProcessError as e:
         print(e)
         return 1
@@ -133,8 +132,7 @@ def build_layer(layername: str, options: dict) -> int:
     # run pre-install steps
     for cmd in pre_install_cmds:
         try:
-            proc: subprocess.CompletedProcess = subprocess.run(cmd, shell=True)
-            proc.check_returncode()
+            subprocess.run(cmd, shell=True, check=True)
         except subprocess.CalledProcessError as e:
             print(e)
             return 1
@@ -142,8 +140,7 @@ def build_layer(layername: str, options: dict) -> int:
     # install requirements with pip in venv
     for r in requirements:
         try:
-            proc = subprocess.run([pip_bin, "install", r])
-            proc.check_returncode()
+            subprocess.run([pip_bin, "install", r], check=True)
         except subprocess.CalledProcessError as e:
             print(e)
             return 1
@@ -158,8 +155,7 @@ def build_layer(layername: str, options: dict) -> int:
     # strip libraries
     # this command will fail when find returns no matching files
     try:
-        proc = subprocess.run(["find", ".", "-name", "*.so", "-exec", "strip", "{}", "+"])
-        proc.check_returncode()
+        subprocess.run(["find", ".", "-name", "*.so", "-exec", "strip", "{}", "+"], check=False)
     except subprocess.CalledProcessError as e:
         print(e)
         return 1
@@ -171,12 +167,12 @@ def build_layer(layername: str, options: dict) -> int:
         zip_cmd.append(exclude)
 
     try:
-        proc = subprocess.run(zip_cmd)
-        proc.check_returncode()
+        subprocess.run(zip_cmd, check=True)
     except subprocess.CalledProcessError as e:
         print(e)
         return 1
 
+    # change back to the old working directory
     os.chdir(work_dir)
 
     # delete temp directory
