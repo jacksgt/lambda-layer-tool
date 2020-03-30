@@ -12,6 +12,11 @@ Here is a simple example:
 ```yaml
 ---
 version: '0.3'
+default_excludes:
+  - '*.dist-info/*'
+  - '*.egg-info/*'
+  - '*/__pycache__/*'
+  - '*.pyc'
 layers:
   awesome-numpy:
     description: 'Minimal numpy 1.18'
@@ -20,10 +25,6 @@ layers:
       - 'numpy==1.18.2'
     excludes:
       - '*/numpy/tests/*'
-      - '*.dist-info/*'
-      - '*.egg-info/*'
-      - '*/__pycache__/*'
-      - '*.pyc'
 ```
 
 Then just run:
@@ -55,7 +56,7 @@ $ ./layer-tool.py --publish awesome-numpy
 ## Lambda Environment
 
 To match the environment of AWS Lambda functions as closely as possible (especially when you use this tool on non-Linux systems), the tool should be run inside a Docker container.
-The [lambci/lambda Docker image]() closely resembles the real Lambda environment and is well-suited for this task.
+The [lambci/lambda Docker image](https://github.com/lambci/docker-lambda) closely resembles the real Lambda environment and is well-suited for this task.
 Example:
 
 ```

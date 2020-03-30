@@ -44,11 +44,14 @@ def main():
             print("Unsupport file version: ", data['version'])
             sys.exit(1)
 
+        default_excludes: List[str] = data.get('default_excludes', [])
+
         for key, value in data['layers'].items():
             if args.list:
                 print(key)
 
             if args.build is not None and (args.build == [] or key in args.build):
+                value['excludes'] += default_excludes
                 if build_layer(key, value):
                     print("Failed to build layer ", key, ", aborting.")
                     sys.exit(1)
