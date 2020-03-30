@@ -9,6 +9,8 @@ layers:
   awesome-numpy:
     description: 'Minimal numpy 1.18 for python3.7'
     runtimes: 'python3.7'
+    pre_installs:
+      - 'echo "Hello, World!" > python/hello-world.txt'
     requirements:
       - 'numpy==1.18.2'
     excludes:

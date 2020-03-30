@@ -5,7 +5,14 @@
 A tool to programmatically build and publish Layers for AWS Lambda.
 
 Instead of manually copy & pasting build instructions for a Lambda Layer into your shell or trying to script your way around, use this tool to automate the process.
-Given a simple YAML file, it will install the specified dependencies in a clean environment, strip any binaries inside, apply exclusion patterns and bundle everything up into an archive.
+Given a simple YAML file, it will:
+* create a new, clean directory for the lambda layer,
+* run specified pre-installation commands,
+* install python requirements with Pip in a virtual environment,
+* strip any binaries and libraries in the lambda directory,
+* apply global and layer-specific exclusion patterns,
+* bundle the remainder up into a ZIP archive.
+
 Then, you can use the tool to publish the new layer (version) on AWS.
 
 Here is a simple example:
@@ -21,6 +28,8 @@ layers:
   awesome-numpy:
     description: 'Minimal numpy 1.18'
     runtimes: 'python3.6'
+    pre_installs:
+      - 'yum install gcc-gfortran'
     requirements:
       - 'numpy==1.18.2'
     excludes:

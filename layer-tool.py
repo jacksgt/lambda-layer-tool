@@ -108,10 +108,14 @@ def build_layer(layername: str, options: dict) -> int:
     if not check_runtime(runtime):
         return 1
 
-    # create temporary directory
+    pre_install_cmds: List[str] = options.get('pre_installs', [])
+
+    # create temporary directory and change to it (also save old path)
     tmp_dir = tempfile.TemporaryDirectory()
     tmp_dir_path: str = tmp_dir.name
     print('created temporary directory', tmp_dir_path)
+    work_dir: str = os.getcwd()
+    os.chdir(tmp_dir_path)
 
     # set_paths
     venv_dir: str = os.path.join(tmp_dir_path, "venv/")
@@ -119,25 +123,33 @@ def build_layer(layername: str, options: dict) -> int:
     lambda_dir: str = os.path.join(tmp_dir_path, "python/")
     outfile: str = layername + ".zip"
 
+    # create a new directory
+    # which only contains files relevant to the lambda layer
+    os.mkdir(lambda_dir)
+
     # activate virtualenv
     venv.create(venv_dir, with_pip=True)
 
-    # install requirements with pip in venv
-    for r in requirements:
+    # run pre-install steps
+    for cmd in pre_install_cmds:
         try:
-            proc: subprocess.CompletedProcess = subprocess.run([pip_bin, "install", r])
+            proc: subprocess.CompletedProcess = subprocess.run(cmd, shell=True)
             proc.check_returncode()
         except subprocess.CalledProcessError as e:
             print(e)
             return 1
 
-    # create a new directory
-    # which only contains files relevant to the lambda layer
-    # and change to it
-    os.mkdir(lambda_dir)
+    # install requirements with pip in venv
+    for r in requirements:
+        try:
+            proc = subprocess.run([pip_bin, "install", r])
+            proc.check_returncode()
+        except subprocess.CalledProcessError as e:
+            print(e)
+            return 1
+
+    # move (copy) the installed requirements into the layer path
     os.rename(os.path.join(venv_dir, "lib/"), os.path.join(lambda_dir, "lib/"))
-    work_dir: str = os.getcwd()
-    os.chdir(tmp_dir_path)
 
     # put current configuration into the folder
     with open('python/layer.yaml', 'w') as outstream:
