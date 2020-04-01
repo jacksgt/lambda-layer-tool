@@ -145,11 +145,19 @@ def build_layer(layername: str, options: dict) -> int:
             print(e)
             return 1
 
+    # save venv packages
+    with open(os.path.join(lambda_dir, 'pip-freeze.txt'), 'w') as outstream:
+        try:
+            subprocess.run([pip_bin, "freeze"], stdout=outstream, check=True)
+        except subprocess.CalledProcessError as e:
+            print(e)
+            return 1
+
     # move (copy) the installed requirements into the layer path
     os.rename(os.path.join(venv_dir, "lib/"), os.path.join(lambda_dir, "lib/"))
 
-    # put current configuration into the folder
-    with open('python/layer.yaml', 'w') as outstream:
+    # put current layer configuration into the folder
+    with open(os.path.join(lambda_dir, 'layer.yaml'), 'w') as outstream:
         yaml.safe_dump({layername: options}, outstream, default_flow_style=False)
 
     # strip libraries
