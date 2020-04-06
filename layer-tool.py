@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from typing import List
+from typing import List, Dict, Any
 import venv # type: ignore
 import yaml
 
@@ -33,48 +33,48 @@ def main():
 
     with open('layers.yaml', 'r') as stream:
         try:
-            data: dict = yaml.safe_load(stream)
+            data: Dict[str, Any] = yaml.safe_load(stream)
         except yaml.YAMLError as e:
             print(e)
             return 1
 
-        file_version: str = data.get('version', '').strip()
-        if not file_version:
-            print("Warning: no version specified in file!")
-        elif file_version != '0.3':
-            print("Unsupport file version: ", file_version)
-            return 1
+    file_version: str = data.get('version', '').strip()
+    if not file_version:
+        print("Warning: no version specified in file!")
+    elif file_version != '0.3':
+        print("Unsupport file version: ", file_version)
+        return 1
 
-        # basic sanity check for YAML file structure
-        layers: dict = data.get('layers', {})
-        if not layers:
-            print("No layers found in configuration file")
-            return 1
+    # basic sanity check for YAML file structure
+    layers: Dict[str, Any] = data.get('layers', {})
+    if not layers:
+        print("No layers found in configuration file")
+        return 1
 
-        default_excludes: List[str] = data.get('default_excludes', [])
+    default_excludes: List[str] = data.get('default_excludes', [])
 
-        for key, value in layers.items():
-            if args.list:
-                # just print out the layer name
-                print(key)
+    for key, value in layers.items():
+        if args.list:
+            # just print out the layer name
+            print(key)
 
-            if args.build is not None and (args.build == [] or key in args.build):
-                # merge the default and local exclude arrays
-                excludes: List[str] = value.get('excludes', [])
-                value['excludes'] = excludes + default_excludes
-                if build_layer(key, value):
-                    print("Failed to build layer ", key, ", aborting.")
-                    return 1
+        if args.build is not None and (args.build == [] or key in args.build):
+            # merge the default and local exclude arrays
+            excludes: List[str] = value.get('excludes', [])
+            value['excludes'] = excludes + default_excludes
+            if build_layer(key, value):
+                print("Failed to build layer ", key, ", aborting.")
+                return 1
 
-            if args.publish is not None and (args.publish == [] or key in args.publish):
-                if publish_layer(key, value):
-                    print("Failed to publish layer ", key, ", aborting.")
-                    return 1
+        if args.publish is not None and (args.publish == [] or key in args.publish):
+            if publish_layer(key, value):
+                print("Failed to publish layer ", key, ", aborting.")
+                return 1
 
     return 0
 
 
-def publish_layer(layername: str, options: dict) -> int:
+def publish_layer(layername: str, options: Dict[str, Any]) -> int:
     description: str = options.get('description', ' ')
     runtime: str = options.get('runtimes', '[]')
 
@@ -93,7 +93,7 @@ def publish_layer(layername: str, options: dict) -> int:
     return 0
 
 
-def build_layer(layername: str, options: dict) -> int:
+def build_layer(layername: str, options: Dict[str, Any]) -> int:
     requirements: List[str] = options.get('requirements', [])
     if not requirements:
         print("No requirements found for layer " + layername)
