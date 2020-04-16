@@ -15,6 +15,8 @@ Given a simple YAML file, it will:
 
 Then, you can use the tool to publish the new layer (version) on AWS.
 
+For a full introduction, read the [introductory blog post](https://blog.cubieserver.de/2020/lambda-layer-tool/).
+
 Here is a simple example:
 ```yaml
 ---
@@ -61,6 +63,8 @@ $ ./layer-tool.py --publish awesome-numpy
     ]
 }
 ```
+
+To learn how to use this tool to reduce the size of your layers, read the [post about creating a minimal boto3 layer](https://blog.cubieserver.de/2020/building-a-minimal-boto3-lambda-layer/).
 
 ## Lambda Environment
 
