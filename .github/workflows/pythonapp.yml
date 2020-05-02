@@ -5,7 +5,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -33,9 +32,7 @@ jobs:
     - name: Build example Python layer
       run: |
         cd tests/numpy/
-        ../../layer-tool.py --list
-        ../../layer-tool.py --build awesome-numpy
-        du -h awesome-numpy.zip
+        ./test.sh
     - name: Set up Node v10
       uses: actions/setup-node@v1
       with:
@@ -43,6 +40,4 @@ jobs:
     - name: Build example Node.js layer
       run: |
         cd tests/aws-sdk/
-        ../../layer-tool.py --list
-        ../../layer-tool.py --build awesome-aws-sdk
-        du -h awesome-aws-sdk.zip
+        ./test.sh
