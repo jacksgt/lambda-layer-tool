@@ -42,7 +42,7 @@ def main():
     if not file_version:
         print("Warning: no version specified in file!")
     elif file_version != '0.3':
-        print("Unsupport file version: ", file_version)
+        print("Unsupported file version: ", file_version)
         return 1
 
     # basic sanity check for YAML file structure
@@ -118,43 +118,82 @@ def build_layer(layername: str, options: Dict[str, Any]) -> int:
 
     # set_paths
     venv_dir: str = os.path.join(tmp_dir_path, "venv/")
+    node_modules_dir: str = os.path.join(tmp_dir_path, "node_modules/")
     pip_bin: str = os.path.join(venv_dir, "bin/pip")
-    lambda_dir: str = os.path.join(tmp_dir_path, "python/")
     outfile: str = layername + ".zip"
+
+    lambda_dir: str
+    if runtime.startswith("python"):
+        lambda_dir = os.path.join(tmp_dir_path, "python")
+    elif runtime.startswith("node"):
+        lambda_dir = os.path.join(tmp_dir_path, "nodejs")
 
     # create a new directory
     # which only contains files relevant to the lambda layer
     os.mkdir(lambda_dir)
 
-    # activate virtualenv
-    venv.create(venv_dir, with_pip=True)
+    if runtime.startswith('python'):
+        # activate virtualenv
+        venv.create(venv_dir, with_pip=True)
 
-    # run pre-install steps
-    for cmd in pre_install_cmds:
-        try:
-            subprocess.run(cmd, shell=True, check=True)
-        except subprocess.CalledProcessError as e:
-            print(e)
-            return 1
+        # run pre-install steps
+        for cmd in pre_install_cmds:
+            try:
+                subprocess.run(cmd, shell=True, check=True)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                return 1
 
-    # install requirements with pip in venv
-    for r in requirements:
-        try:
-            subprocess.run([pip_bin, "install", r], check=True)
-        except subprocess.CalledProcessError as e:
-            print(e)
-            return 1
+        # install requirements with pip in venv
+        for r in requirements:
+            try:
+                subprocess.run([pip_bin, "install", r], check=True)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                return 1
 
-    # save venv packages
-    with open(os.path.join(lambda_dir, 'pip-freeze.txt'), 'w') as outstream:
-        try:
-            subprocess.run([pip_bin, "freeze"], stdout=outstream, check=True)
-        except subprocess.CalledProcessError as e:
-            print(e)
-            return 1
+        # save venv packages
+        with open(os.path.join(lambda_dir, 'pip-freeze.txt'), 'w') as outstream:
+            try:
+                subprocess.run([pip_bin, "freeze"], stdout=outstream, check=True)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                return 1
 
-    # move (copy) the installed requirements into the layer path
-    os.rename(os.path.join(venv_dir, "lib/"), os.path.join(lambda_dir, "lib/"))
+        # move (copy) the installed requirements into the layer path
+        os.rename(os.path.join(venv_dir, "lib/"), os.path.join(lambda_dir, "lib/"))
+
+    elif runtime.startswith('node'):
+        # this ensures pre-install commands work properly
+        os.mkdir(node_modules_dir)
+
+        # run pre-install steps
+        for cmd in pre_install_cmds:
+            try:
+                subprocess.run(cmd, shell=True, check=True)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                return 1
+
+        # install packages with npm
+        for r in requirements:
+            try:
+                subprocess.run(["npm", "install", r], check=True)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                return 1
+
+        # save installed packages
+        with open(os.path.join(lambda_dir, 'npm-list.txt'), 'w') as outstream:
+            try:
+                subprocess.run(["npm", "list"], stdout=outstream, check=True)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                return 1
+
+        # move the installed dependencies into the layer path
+        os.rename(node_modules_dir, os.path.join(lambda_dir, "node_modules/"))
+        os.rename(os.path.join(tmp_dir_path, "package-lock.json"), os.path.join(lambda_dir, "package-lock.json"))
 
     # put current layer configuration into the folder
     with open(os.path.join(lambda_dir, 'layer.yaml'), 'w') as outstream:
@@ -169,7 +208,7 @@ def build_layer(layername: str, options: Dict[str, Any]) -> int:
         return 1
 
     # package to zip archive and exclude unnecessary files
-    zip_cmd: List[str] = ['zip', '-r', '-9', os.path.join(work_dir, outfile), "python/"]
+    zip_cmd: List[str] = ['zip', '--filesync', '-r', '-9', os.path.join(work_dir, outfile), os.path.basename(lambda_dir)]
     for exclude in excludes:
         zip_cmd.append('-x')
         zip_cmd.append(exclude)
@@ -193,7 +232,17 @@ def build_layer(layername: str, options: Dict[str, Any]) -> int:
 
 
 def check_runtime(expected_runtime: str) -> bool:
-    actual_runtime: str = "python{}.{}".format(sys.version_info[0], sys.version_info[1])
+    actual_runtime: str
+    if expected_runtime.startswith("python"):
+        actual_runtime = "python{}.{}".format(sys.version_info[0], sys.version_info[1])
+    elif expected_runtime.startswith("node"):
+        node_major_version: str = subprocess.check_output(["node", "--version"]).decode("ascii")
+        node_major_version = node_major_version[1:].split('.')[0]
+        actual_runtime = "node{}.x".format(node_major_version)
+    else:
+        print("Error: unsupported runtime {}".format(expected_runtime))
+        return False
+
     if actual_runtime != expected_runtime:
         print("Error: specified runtime {} does not match: {}".format(expected_runtime, actual_runtime))
         return False

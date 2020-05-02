@@ -30,9 +30,19 @@ jobs:
       run: |
         pip install -r dev-requirements.txt
         python3 -m mypy *.py
-    - name: Build example layer
+    - name: Build example Python layer
       run: |
         cd tests/numpy/
         ../../layer-tool.py --list
         ../../layer-tool.py --build awesome-numpy
         du -h awesome-numpy.zip
+    - name: Set up Node v10
+      uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    - name: Build example Node.js layer
+      run: |
+        cd tests/aws-sdk/
+        ../../layer-tool.py --list
+        ../../layer-tool.py --build awesome-aws-sdk
+        du -h awesome-aws-sdk.zip

@@ -1,0 +1,19 @@
+---
+version: '0.3'
+default_excludes:
+  - 'LICENSE'
+  - 'CHANGELOG'
+  - 'README.md'
+  - '.npmignore'
+
+layers:
+  awesome-aws-sdk:
+    description: 'AWS SDK JS 2.668'
+    runtimes: 'node10.x'
+    pre_installs:
+      - 'echo "Hello, World!" > node_modules/hello-world.txt'
+    requirements:
+      - 'aws-sdk@2.668.0'
+    excludes:
+      - '*/aws-sdk/*.d.ts'
+      - '*/aws-sdk/*.txt'

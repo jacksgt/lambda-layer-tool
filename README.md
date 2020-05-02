@@ -8,7 +8,8 @@ Instead of manually copy & pasting build instructions for a Lambda Layer into yo
 Given a simple YAML file, it will:
 * create a new, clean directory for the lambda layer,
 * run specified pre-installation commands,
-* install python requirements with Pip in a virtual environment,
+* *Python*: install requirements with Pip in a virtual environment,
+* *Node.js*: install dependencies with NPM,
 * strip any binaries and libraries in the lambda directory,
 * apply global and layer-specific exclusion patterns,
 * bundle the remainder up into a ZIP archive.
@@ -66,6 +67,8 @@ $ ./layer-tool.py --publish awesome-numpy
 
 To learn how to use this tool to reduce the size of your layers, read the [post about creating a minimal boto3 layer](https://blog.cubieserver.de/2020/building-a-minimal-boto3-lambda-layer/).
 
+The [`tests` directory](./tests/) also serve as examples how to build layers for different runtimes (Python, Node.js).
+
 ## Lambda Environment
 
 To match the environment of AWS Lambda functions as closely as possible (especially when you use this tool on non-Linux systems), the tool should be run inside a Docker container.
@@ -92,8 +95,8 @@ In addition to the Python dependencies (`requirements.txt`), this tool currently
 
 ## Limitations
 
-Currently, this tool only supports building Python layers with Pip.
-However, it should be fairly straightforward to extend the functionality to other runtimes, e.g. JavaScript.
+Currently, this tool only supports building Python layers with Pip and Node.js layer with NPM.
+However, it should be fairly straightforward to extend the functionality to other runtimes and package managers.
 
 ## License
 
